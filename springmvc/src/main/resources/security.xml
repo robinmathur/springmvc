@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
+    http://www.springframework.org/schema/security
+    http://www.springframework.org/schema/security/spring-security-4.0.xsd">
+
+	<http auto-config="true" use-expressions="true" access-decision-manager-ref="httpAccessDecisionManager">
+		<intercept-url pattern="/login" access="permitAll" />
+		<intercept-url pattern="/logout" access="permitAll" />
+		<intercept-url pattern="/accessdenied" access="permitAll" />
+		<intercept-url pattern="/admin/**" access="hasRole('ROLE_ADMIN')" />
+		<intercept-url pattern="/**"
+			access="hasAnyRole('ROLE_USER','ROLE_ADMIN')" />
+		<form-login login-page="/login" authentication-failure-url="/accessdenied"
+			login-processing-url="/login_check" username-parameter="username"
+			password-parameter="password" authentication-success-handler-ref="roleBasedAuthenticationSuccessHandler" />
+		<logout logout-success-url="/login" delete-cookies="JSESSIONID"
+			invalidate-session="true" logout-url="/user_logout" />
+		<csrf disabled="true" />
+	</http>
+
+	<beans:bean id="httpAccessDecisionManager"
+		class="org.springframework.security.access.vote.AffirmativeBased">
+		<beans:constructor-arg name="decisionVoters">
+			<beans:list>
+				<beans:ref bean="webExpressionVoter" />
+			</beans:list>
+		</beans:constructor-arg>
+	</beans:bean>
+
+	<beans:bean id="webExpressionVoter"
+		class="org.springframework.security.web.access.expression.WebExpressionVoter">
+		<beans:property name="expressionHandler" ref="segmentExpressionHandler" />
+	</beans:bean>
+
+	<beans:bean id="segmentExpressionHandler" class="com.rob.segmentauthenticate.handler.CustomExpressionHandler">
+		<beans:constructor-arg ref="fileSegmentAuthenticateProvider"></beans:constructor-arg>
+	</beans:bean>
+	
+	<beans:bean id="fileSegmentAuthenticateProvider" class="com.rob.segmentauthenticate.provider.FileSegmentAuthenticateProvider">
+		<!-- <beans:constructor-arg name="roleSegmentFilePath" value="" type="java.lang.String"></beans:constructor-arg> -->
+	</beans:bean>
+
+	<authentication-manager alias="authenticationManager">
+		<authentication-provider user-service-ref="userService">
+			<!-- <user-service> <user name="robin" password="1" authorities="ROLE_USER" 
+				/> <user name="satish" password="1" authorities="ROLE_ADMIN,ROLE_USER" /> 
+				</user-service> -->
+		</authentication-provider>
+	</authentication-manager>
+
+	<beans:bean id="roleBasedAuthenticationSuccessHandler"
+		class="com.rob.security.RoleBasedAuthenticationSuccessHandler">
+		<beans:property name="roleUrlMap">
+			<beans:map>
+				<beans:entry key="ROLE_ADMIN" value="/admin/adminConsole"></beans:entry>
+				<beans:entry key="ROLE_USER" value="/list"></beans:entry>
+			</beans:map>
+		</beans:property>
+	</beans:bean>
+
+
+
+</beans:beans>
